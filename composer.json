@@ -1,0 +1,17 @@
+{
+    "require": {
+        "amocrm/amocrm-api-library": "^0.6.0"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "MVC\\": "src/mvc",
+            "MVC\\Controllers\\": "src/mvc/controllers",
+            "MVC\\Core\\": "src/mvc/core",
+            "MVC\\Models\\": "src/mvc/models",
+            "Db\\": "src/Db",
+            "OAuth\\": "OAuth",
+            "Logger\\": "src/Logger"
+        }
+    }
+}
