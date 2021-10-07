@@ -25,7 +25,7 @@ class EntitiesController extends Controller
         //hardcode
         $accountId = 28780795;
         $baseDomain = 'nikitav.amocrm.com';
-        $entitiesCount = 10;
+        $entitiesCount = 30;
 
         $apiClient = $this->apiClientFactory->make();
         $tokensModel = new TokensModel (null, $baseDomain);
@@ -59,7 +59,6 @@ class EntitiesController extends Controller
 
             $leadsCollection = new LeadsCollection();
             $customersCollection = new CustomersCollection();
-
             $leadCounter = 0;
             
             foreach($leadData as $extLead) {
@@ -82,16 +81,17 @@ class EntitiesController extends Controller
 
                 
                     $leadsCollection->add($lead);
-
                     $customer = (new CustomerModel())
                         ->setName('Customer ' . $leadCounter)
                         ->setNextDate(time()+86400);
 
                     $customersCollection->add($customer);
                 } else {
+                    
                     //создадим сущности
                     try {
                         $addedLeadsCollection = $apiClient->leads()->addComplex($leadsCollection);
+                        
                         $addedCustomersCollection = $apiClient->customers()->add($customersCollection);
                     } catch (AmoCRMApiException $e) {
                         Logger::getLogger('runtime')->log($e->getLastRequestInfo());

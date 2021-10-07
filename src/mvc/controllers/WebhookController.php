@@ -2,6 +2,7 @@
 
 namespace MVC\Controllers;
 
+use MVC\Core\App;
 use MVC\Core\Controller;
 use MVC\Models\TokensModel;
 use MVC\Models\AccountsModel;

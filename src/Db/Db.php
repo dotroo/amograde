@@ -45,8 +45,8 @@ class Db
             if (!isset($params)) {
                 $stmt = self::$instance->query($sql);
             } else {
-               $stmt = self::$instance->prepare($sql);
-               $stmt->execute($params);
+                $stmt = self::$instance->prepare($sql);
+                $stmt->execute($params);
             }
         }
         catch (\PDOException $e) {
