@@ -1,6 +1,6 @@
 {
     "require": {
-        "amocrm/amocrm-api-library": "^0.6.0"
+        "amocrm/amocrm-api-library": "^0.6.1"
     },
 
     "autoload": {

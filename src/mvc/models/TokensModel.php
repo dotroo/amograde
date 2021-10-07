@@ -31,7 +31,10 @@ class TokensModel extends Model
         $this->clientId = $clientId;
     }
 
-    public function getData(int $accountId): array
+    /**
+     * @return array|bool
+     */
+    public function getData(int $accountId): mixed
     {
         Db::getInstance();
         $selectOauth = "SELECT oauth.access_token, oauth.refresh_token, oauth.expires, accounts.base_domain FROM oauth JOIN accounts ON oauth.account_id = accounts.account_id WHERE oauth.account_id=?";
@@ -40,10 +43,17 @@ class TokensModel extends Model
         return $resultSelectOauth;
     }
 
-    public function getAccessTokenByAccountId (int $accountId): AccessToken
+    /**
+     * @return AccessToken|bool
+     */
+    public function getAccessTokenByAccountId (int $accountId): mixed
     {
         $options = $this->getData($accountId);
-        return new AccessToken($options);
+        if ($options !== false) {
+            return new AccessToken($options);
+        } else {
+            return false;
+        }
     }
 
     public function write(): void

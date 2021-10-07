@@ -12,7 +12,7 @@ use \AmoCRM\Exceptions\AmoCRMApiException;
 
 class WebhookController extends Controller
 {
-    public function handle()
+    public function handle() :void
     {
         $apiClient = $this->apiClientFactory->make();
         $apiClient->setAccountBaseDomain($_GET['referer']);

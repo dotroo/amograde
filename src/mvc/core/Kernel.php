@@ -8,7 +8,7 @@ use MVC\Controllers\WebhookController;
 class Kernel
 {
     private $defaultControllerName = 'HomeController';
-    private $defaultActionName = 'index';
+    private $defaultActionName = 'handle';
     
     public function launch()
     {
