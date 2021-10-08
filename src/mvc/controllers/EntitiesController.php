@@ -62,45 +62,49 @@ class EntitiesController extends Controller
             $leadCounter = 0;
             
             foreach($leadData as $extLead) {
-                //отправляем меньше 100 сущностей в одном запросе
-                if ($leadsCollection->count() < 25) {
-                    $lead = (new LeadModel())
-                        ->setName($extLead['name'])
-                        ->setPrice($extLead['price'])
-                        ->setContacts(
-                            (new ContactsCollection)
-                                ->add(
-                                    (new ContactModel())
-                                        ->setName($extLead['contact']['name'])
-                                )
-                        )
-                        ->setCompany(
-                            (new CompanyModel())
-                                ->setName($extLead['company']['name'])
-                        );
+                $lead = (new LeadModel())
+                    ->setName($extLead['name'])
+                    ->setPrice($extLead['price'])
+                    ->setContacts(
+                        (new ContactsCollection)
+                            ->add(
+                                (new ContactModel())
+                                    ->setName($extLead['contact']['name'])
+                            )
+                    )
+                    ->setCompany(
+                        (new CompanyModel())
+                            ->setName($extLead['company']['name'])
+                    );
+            
+                $leadsCollection->add($lead);
+                $customer = (new CustomerModel())
+                    ->setName('Customer ' . $leadCounter)
+                    ->setNextDate(time()+86400);
+                $customersCollection->add($customer);
+                $leadCounter++;
+            }   
 
-                
-                    $leadsCollection->add($lead);
-                    $customer = (new CustomerModel())
-                        ->setName('Customer ' . $leadCounter)
-                        ->setNextDate(time()+86400);
+            //создадим буферные коллекции для отправки менее 100 сущностей за запрос
+            $bufferLeadsCollection = new LeadsCollection();
+            $bufferCustomersCollection = new CustomersCollection();
 
-                    $customersCollection->add($customer);
+            for ($i = 0; $i < $leadsCollection->count(); $i++) {
+                if ($bufferLeadsCollection->count() < 25 && $entitiesCount > 0) {
+                    $bufferLeadsCollection->add($leadsCollection->offsetGet($i));
+                    $bufferCustomersCollection->add($customersCollection->offsetGet($i));
+                    $entitiesCount--;
                 } else {
-                    
                     //создадим сущности
                     try {
-                        $addedLeadsCollection = $apiClient->leads()->addComplex($leadsCollection);
-                        
-                        $addedCustomersCollection = $apiClient->customers()->add($customersCollection);
+                        $addedLeadsCollection = $apiClient->leads()->addComplex($bufferLeadsCollection);
+                        $addedCustomersCollection = $apiClient->customers()->add($bufferCustomersCollection);
                     } catch (AmoCRMApiException $e) {
                         Logger::getLogger('runtime')->log($e->getLastRequestInfo());
                         echo $e->getMessage();
                     }
-
                     //свяжем сущности
                     $linksCollection = new LinksCollection();
-
                     $customersCounter = 0;
                     foreach ($addedLeadsCollection as $addedLead) {
                         $linksCollection->add($addedLead->getContacts()->first());
@@ -109,11 +113,13 @@ class EntitiesController extends Controller
                         $linksCollection->clear();
                         $customersCounter++;
                     }
-                    //очистим коллекцию, чтобы добавить следующую пачку
-                    $leadsCollection->clear();
-                }
+                    //очистим буферные коллекции и добавим следующей элемент коллекции
+                    $bufferLeadsCollection->clear();
+                    $bufferCustomersCollection->clear();
 
-                $leadCounter++;
+                    $bufferLeadsCollection->add($leadsCollection->offsetGet($i));
+                    $bufferCustomersCollection->add($customersCollection->offsetGet($i));
+                }
             }
         }  
     }
