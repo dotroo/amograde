@@ -25,7 +25,7 @@ class EntitiesController extends Controller
         //hardcode
         $accountId = 28780795;
         $baseDomain = 'nikitav.amocrm.com';
-        $entitiesCount = 30;
+        $entitiesCount = 10;
 
         $apiClient = $this->apiClientFactory->make();
         $tokensModel = new TokensModel (null, $baseDomain);
@@ -50,9 +50,9 @@ class EntitiesController extends Controller
             $leadData = [];
 
             for ($i = 0; $i < $entitiesCount; $i++) {
-                $leadSeed['name'] = 'Lead ' . $i;
-                $leadSeed['contact']['name'] ='Contact ' . $i;
-                $leadSeed['company']['name'] = 'Company ' . $i;
+                $leadSeed['name'] = 'new Lead ' . $i;
+                $leadSeed['contact']['name'] ='new Contact ' . $i;
+                $leadSeed['company']['name'] = 'new Company ' . $i;
 
                 $leadData[] = $leadSeed;
             }
@@ -61,7 +61,7 @@ class EntitiesController extends Controller
             $customersCollection = new CustomersCollection();
             $leadCounter = 0;
             
-            foreach($leadData as $extLead) {
+            foreach ($leadData as $extLead) {
                 $lead = (new LeadModel())
                     ->setName($extLead['name'])
                     ->setPrice($extLead['price'])
@@ -79,7 +79,7 @@ class EntitiesController extends Controller
             
                 $leadsCollection->add($lead);
                 $customer = (new CustomerModel())
-                    ->setName('Customer ' . $leadCounter)
+                    ->setName('new Customer ' . $leadCounter)
                     ->setNextDate(time()+86400);
                 $customersCollection->add($customer);
                 $leadCounter++;
@@ -88,13 +88,17 @@ class EntitiesController extends Controller
             //создадим буферные коллекции для отправки менее 100 сущностей за запрос
             $bufferLeadsCollection = new LeadsCollection();
             $bufferCustomersCollection = new CustomersCollection();
+            $customersCounter = 0;
 
-            for ($i = 0; $i < $leadsCollection->count(); $i++) {
+            for ($i = 0; $i <= $leadsCollection->count(); $i++) {
                 if ($bufferLeadsCollection->count() < 25 && $entitiesCount > 0) {
+                    Logger::getLogger('runtime')->log("Adding lead {$i} to the buffer collection");
                     $bufferLeadsCollection->add($leadsCollection->offsetGet($i));
                     $bufferCustomersCollection->add($customersCollection->offsetGet($i));
                     $entitiesCount--;
+                    Logger::getLogger('runtime')->log($entitiesCount . ' entities left');
                 } else {
+                    Logger::getLogger('runtime')->log('Start sending buffer collections');
                     //создадим сущности
                     try {
                         $addedLeadsCollection = $apiClient->leads()->addComplex($bufferLeadsCollection);
@@ -105,20 +109,29 @@ class EntitiesController extends Controller
                     }
                     //свяжем сущности
                     $linksCollection = new LinksCollection();
-                    $customersCounter = 0;
                     foreach ($addedLeadsCollection as $addedLead) {
+                        Logger::getLogger('runtime')->log('Customers counter: ' . $customersCounter);
                         $linksCollection->add($addedLead->getContacts()->first());
                         $linksCollection->add($addedLead->getCompany());
                         $linkEntities = $apiClient->customers()->link($addedCustomersCollection->offsetGet($customersCounter), $linksCollection);
                         $linksCollection->clear();
                         $customersCounter++;
+                        
                     }
                     //очистим буферные коллекции и добавим следующей элемент коллекции
                     $bufferLeadsCollection->clear();
                     $bufferCustomersCollection->clear();
 
-                    $bufferLeadsCollection->add($leadsCollection->offsetGet($i));
-                    $bufferCustomersCollection->add($customersCollection->offsetGet($i));
+                    Logger::getLogger('runtime')->log('Cleared buffer collections');
+
+                    if ($leadsCollection->offsetExists($i)) {
+                        Logger::getLogger('runtime')->log("Adding lead {$i} to the buffer collection");
+
+                        $bufferLeadsCollection->add($leadsCollection->offsetGet($i));
+                        $bufferCustomersCollection->add($customersCollection->offsetGet($i));
+                        $entitiesCount--;
+                        Logger::getLogger('runtime')->log($entitiesCount . ' entities left');
+                    }   
                 }
             }
         }  
